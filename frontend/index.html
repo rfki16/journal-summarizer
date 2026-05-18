@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Journal Summarizer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f13;
+      --surface: #18181f;
+      --surface2: #22222c;
+      --border: #2e2e3a;
+      --accent: #7c6af7;
+      --accent-glow: rgba(124, 106, 247, 0.15);
+      --text: #e8e8f0;
+      --muted: #7a7a90;
+      --success: #4ade80;
+      --error: #f87171;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    /* Background grid decoration */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(124,106,247,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,106,247,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--accent-glow);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding: 4px 14px;
+      border-radius: 99px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #e8e8f0 0%, #7c6af7 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    /* Card */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+
+    /* Tab toggle */
+    .tab-group {
+      display: flex;
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 9px;
+      border: none;
+      border-radius: 7px;
+      background: transparent;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    /* Input panels */
+    .input-panel { display: none; }
+    .input-panel.active { display: block; }
+
+    textarea {
+      width: 100%;
+      min-height: 180px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.7;
+      padding: 16px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--muted); }
+
+    /* Drop zone */
+    .dropzone {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .dropzone:hover, .dropzone.dragover {
+      border-color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .dropzone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .drop-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+      display: block;
+    }
+
+    .drop-text {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .drop-text strong { color: var(--text); }
+    .file-selected { color: var(--accent); font-weight: 500; margin-top: 10px; font-size: 13px; }
+
+    /* Submit button */
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      background: var(--accent);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: #6b59e8;
+      transform: translateY(-1px);
+      box-shadow: 0 8px 24px rgba(124,106,247,0.3);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Loading spinner */
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      display: none;
+    }
+    .btn-submit.loading .spinner { display: block; }
+    .btn-submit.loading .btn-text::after { content: '...'; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Result */
+    .result-card {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      animation: fadeUp 0.4s ease;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .result-card.visible { display: block; }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .result-content {
+      color: var(--text);
+      font-size: 14.5px;
+      line-height: 1.85;
+      white-space: pre-wrap;
+      border-left: 3px solid var(--accent);
+      padding-left: 20px;
+    }
+
+    .btn-copy {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      padding: 6px 14px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-copy:hover { color: var(--text); border-color: var(--accent); }
+
+    /* Error */
+    .error-box {
+      display: none;
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid var(--error);
+      color: var(--error);
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 13px;
+      margin-top: 16px;
+    }
+    .error-box.visible { display: block; }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>git
+      <div class="badge">✦ Groq-Powered</div>
+      <h1>Journal Summarizer</h1>
+      <p class="subtitle">Rangkum jurnal ilmiah secara otomatis.<br>Upload PDF atau paste teks langsung.</p>
+    </header>
+
+    <div class="card">
+      <p class="section-label">Input Jurnal</p>
+
+      <!-- Tab toggle -->
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="switchTab('text')">✏️ Paste Teks</button>
+        <button class="tab-btn" onclick="switchTab('pdf')">📄 Upload PDF</button>
+      </div>
+
+      <!-- Panel: Teks -->
+      <div class="input-panel active" id="panel-text">
+        <textarea id="input-text" placeholder="Paste isi jurnal kamu di sini...&#10;&#10;Contoh: abstrak, pendahuluan, metodologi, hasil, dan kesimpulan jurnal."></textarea>
+      </div>
+
+      <!-- Panel: PDF -->
+      <div class="input-panel" id="panel-pdf">
+        <div class="dropzone" id="dropzone">
+          <input type="file" id="input-file" accept=".pdf" onchange="onFileChange(this)"/>
+          <span class="drop-icon">📂</span>
+          <div class="drop-text">
+            <strong>Klik untuk pilih file</strong> atau drag & drop di sini<br>
+            <small>Hanya file PDF yang didukung</small>
+          </div>
+          <div class="file-selected" id="file-name"></div>
+        </div>
+      </div>
+
+      <div class="error-box" id="error-box"></div>
+
+      <button class="btn-submit" id="btn-submit" onclick="submitForm()">
+        <div class="spinner"></div>
+        <span class="btn-text">Rangkum Sekarang</span>
+      </button>
+    </div>
+
+    <!-- Hasil ringkasan -->
+    <div class="result-card" id="result-card">
+      <div class="result-header">
+        <p class="section-label" style="margin-bottom:0">✦ Hasil Ringkasan</p>
+        <button class="btn-copy" onclick="copyResult()">Salin</button>
+      </div>
+      <div class="result-content" id="result-content"></div>
+    </div>
+
+    <footer>Powered by Groq &amp; Llama 3 · Dibuat dengan FastAPI + HTML</footer>
+  </div>
+
+  <script>
+    // ⚠️ GANTI URL INI dengan URL backend kamu setelah deploy
+    // Contoh: "https://journal-summarizer.onrender.com"
+    // Untuk testing lokal, gunakan: "http://localhost:8000"
+    const API_URL = "http://localhost:8000";
+
+    let currentTab = "text";
+
+    function switchTab(tab) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', (tab === 'text' && i === 0) || (tab === 'pdf' && i === 1));
+      });
+      document.getElementById('panel-text').classList.toggle('active', tab === 'text');
+      document.getElementById('panel-pdf').classList.toggle('active', tab === 'pdf');
+      hideError();
+    }
+
+    function onFileChange(input) {
+      const name = input.files[0]?.name || '';
+      document.getElementById('file-name').textContent = name ? `✓ ${name}` : '';
+    }
+
+    // Drag & drop visual feedback
+    const dropzone = document.getElementById('dropzone');
+    dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+    dropzone.addEventListener('drop', () => dropzone.classList.remove('dragover'));
+
+    function showError(msg) {
+      const box = document.getElementById('error-box');
+      box.textContent = msg;
+      box.classList.add('visible');
+    }
+
+    function hideError() {
+      document.getElementById('error-box').classList.remove('visible');
+    }
+
+    function setLoading(state) {
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = state;
+      btn.classList.toggle('loading', state);
+    }
+
+    async function submitForm() {
+      hideError();
+      document.getElementById('result-card').classList.remove('visible');
+
+      const formData = new FormData();
+
+      if (currentTab === 'text') {
+        const text = document.getElementById('input-text').value.trim();
+        if (!text) return showError('Teks tidak boleh kosong.');
+        formData.append('text', text);
+      } else {
+        const file = document.getElementById('input-file').files[0];
+        if (!file) return showError('Harap pilih file PDF terlebih dahulu.');
+        formData.append('file', file);
+      }
+
+      setLoading(true);
+
+      try {
+        const res = await fetch(`${API_URL}/summarize`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+          showError(data.error);
+        } else {
+          document.getElementById('result-content').textContent = data.summary;
+          document.getElementById('result-card').classList.add('visible');
+          document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      } catch (err) {
+        showError('Gagal terhubung ke server. Pastikan backend sudah berjalan.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    function copyResult() {
+      const text = document.getElementById('result-content').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.querySelector('.btn-copy');
+        btn.textContent = '✓ Tersalin!';
+        setTimeout(() => btn.textContent = 'Salin', 2000);
+      });
+    }
+  </script>
+</body>
+</html>

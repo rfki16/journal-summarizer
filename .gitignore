@@ -1,0 +1,6 @@
+# Jangan pernah push file ini ke GitHub!
+.env
+venv/
+__pycache__/
+*.pyc
+.DS_Store
